@@ -5,6 +5,7 @@
 #include  <vector>
 using namespace std;
 
+const bool DEBUGGING = false; 
 unsigned char s[256] = 
  {
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -55,6 +56,9 @@ void addRoundKey() {
 
  }
 */
+/*
+* Rotates the 4 byte word 1 byte to the left.
+*/
 void rotate(char * word) {
 	char tmp = word[0];
 	word[0] = word[1];
@@ -77,25 +81,40 @@ finite field. In other words, perform the rcon operation with i as the input,
  and exclusive or the rcon output with the first byte of the output word
 */
 void key_schedule_core(char * t, int rconi) {
-	
-	// #########################
-	for(int i=0;i<4;++i) {
-		printf("%02hhX", t[i]);
-		cout << " ";
+	if(DEBUGGING) {
+		// #########################
+		for(int i=0;i<4;++i) {
+			printf("%02hhX", t[i]);
+			cout << " ";
+		}
+		cout << endl << "rotate" << endl;
+		// #########################
 	}
-	cout << endl;
-	// #########################
 	rotate(t);
+	if(DEBUGGING) {
+		// #########################
+		for(int i=0;i<4;++i) {
+			printf("%02hhX", t[i]);
+			cout << " ";
+		}
+		cout << endl << "rotate" << endl;
+		// #########################
+	}
 	// #########################
 	for(int i=0;i<4;++i) {
 		t[i] = (char)s[t[i]];
-		printf("%02hhX", t[i]);
-		cout << " ";
+		if(DEBUGGING) { 
+			printf("%02hhX", t[i]);
+			cout << " ";
+		}
 	}
-	cout << endl;
-	// #########################
+	if(DEBUGGING) {
+	cout << endl << "sbox" << endl;
+		// #########################
+	}
 	//cout << rcon(rconi);
 	t[0] = ( t[0] ^ rcon(rconi) );
+	// printf("%02hhX\n", t[0]);
 
 }
 
@@ -103,7 +122,8 @@ void rijndael(char * inital_key) {
 
 	int n = 16;
 	int b = 176;
-	vector<char> expanded_key = new char[n];
+	char * expanded_key = new char[b];
+	int sizeOfExpanded = n;
 	for(int i=0;i<n;++i) {
 		expanded_key[i] = inital_key[i];
 	}
@@ -111,36 +131,45 @@ void rijndael(char * inital_key) {
 
 
 	// key schedule
-	//while(expanded_key.size() != b) {
+	while(sizeOfExpanded != b) {
 		char * t = new char[4];
 		for(int i=0;i<4;++i) {
-			t[i] = expanded_key[getMatrix(3, i)]; // Assign last 4 bytes to t.
+			t[i] = expanded_key[sizeOfExpanded-4+i]; // Assign last 4 bytes to t.
 		}
 		cout << endl;
 		key_schedule_core(t, rconi);
 		rconi++;
-
-	// #########################
-	for(int i=0;i<4;++i) {
-		printf("%02hhX", t[i]);
-		cout << " ";
-	}
-	cout << endl;
-	// #########################
-We exclusive-OR t with the four-byte block n 
-bytes before the new expanded key. This becomes the next 4 bytes in the expanded key
-		
-		for(int i=0;i<4;++i)
-			expanded_key.push_back( t[i] ^ expanded_key[expanded_key.size()-n] );
-
+		if(DEBUGGING) {
 			// #########################
-	for(int i=0;i<4;++i) {
-		printf("%02hhX", expanded_key[i]);
-		cout << " ";
-	}
-	cout << endl;
+			for(int i=0;i<4;++i) {
+				printf("%02hhX", t[i]);
+				cout << " ";
+			}
+			cout << endl;
+		}
 	// #########################
-	//}
+// We exclusive-OR t with the four-byte block n 
+// bytes before the new expanded key. This becomes the next 4 bytes in the expanded key
+		// We do this 4 times to create n=16 bytes of key.
+		for(int i=0;i<4;++i) {
+			for(int j=0;j<4;++j) {
+				expanded_key[sizeOfExpanded+j] = ( t[j] ^ expanded_key[sizeOfExpanded-4+j] );
+				t[j] = expanded_key[sizeOfExpanded+j];
+			}
+			sizeOfExpanded += 4;
+		}
+		if(DEBUGGING) {
+			cout << "After the key expansion." << endl;
+			// #########################
+			for(int i=0;i<sizeOfExpanded;++i) {
+				printf("%02hhX", expanded_key[i]);
+				cout << " ";
+			}
+			cout << endl;
+			// #########################
+		}
+		
+	}
 }
 
 
@@ -154,10 +183,14 @@ Each round consists of several processing steps,
     back into the original plaintext using the same encryption key.
 */
 void encrypt(char * key, char * block) {
+	char * encryptedBlock = new char[16]
 	// Key expansion
 	rijndael(key);
 
 	// Initial round
+
+
+
 
 }
 
