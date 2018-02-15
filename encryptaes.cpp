@@ -6,6 +6,7 @@
 using namespace std;
 
 const bool DEBUGGING = false; 
+const int BLOCKSIZE = 16;
 unsigned char s[256] = 
  {
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -118,7 +119,7 @@ void key_schedule_core(char * t, int rconi) {
 
 }
 
-void rijndael(char * inital_key) {
+char * rijndael(char * inital_key) {
 
 	int n = 16;
 	int b = 176;
@@ -170,9 +171,50 @@ void rijndael(char * inital_key) {
 		}
 		
 	}
+	return expanded_key;
 }
 
+void addRoundKey(char * roundKey, char * block, int round) {
+	for(int i;i<BLOCKSIZE;++i) {
+		block[i] = block[i] ^ roundKey[i+round*16];
+	}
+}
 
+// Using the S-Box we substitute each byte.
+void subBytes(char * block) {
+	for(int i=0;i<BLOCKSIZE;++i) {
+		block[i] = (char)s[block[i]];
+	}
+}
+void shiftRows(char * block) {
+	char * t = new char[4];
+	for(int i=0;i<4;++i) {
+		t[i] = block[4+i];
+	}
+	rotate(t);
+
+	for(int i=0;i<4;++i) {
+		block[4+i] = t[i];
+		t[i] = block[8+i];
+	}
+	rotate(t);
+	rotate(t);
+
+	for(int i=0;i<4;++i) {
+		block[8+i] = t[i];
+		t[i] = block[12+i];
+	}
+	rotate(t);
+	rotate(t);
+	rotate(t);
+
+	for(int i=0;i<4;++i) {
+		block[12+i] = t[i];
+	}
+}
+void mixColumns() {
+
+}
 /*
 10 cycles of repetition for 128-bit keys.
 
@@ -182,13 +224,24 @@ Each round consists of several processing steps,
    A set of reverse rounds are applied to transform ciphertext
     back into the original plaintext using the same encryption key.
 */
-void encrypt(char * key, char * block) {
-	char * encryptedBlock = new char[16]
+char * encrypt(char * key, char * block) {
+	char * encryptedBlock = new char[BLOCKSIZE];
+	for (int i = 0; i < BLOCKSIZE; ++i) {
+		encryptedBlock[i] = block[i];
+	}
 	// Key expansion
-	rijndael(key);
+	char * roundKey = rijndael(key);
 
 	// Initial round
+	addRoundKey(roundKey, encryptedBlock, 0);
 
+	// Rounds
+	subBytes(encryptedBlock);
+	shiftRows(encryptedBlock);
+	//mixColumns
+	//addRoundKey
+
+	// Final Round
 
 
 
@@ -198,8 +251,8 @@ int main () {
   streampos size;
   char * memblock;
   bool reading_key = true;
-  char * aes_key = new char[16];
-  char * block = new char[16];
+  char * aes_key = new char[BLOCKSIZE];
+  char * block = new char[BLOCKSIZE];
   ifstream file ("aes_sample.in", ios::in|ios::binary|ios::ate);
   if (file.is_open())
   {
@@ -228,7 +281,7 @@ int main () {
 	}
 	cout << endl;
 
-	encrypt(aes_key, block);
+	char * encryptedBlock = encrypt(aes_key, block);
 
     delete[] memblock;
   }
