@@ -5,7 +5,7 @@
 #include  <vector>
 using namespace std;
 
-const bool DEBUGGING = true; 
+const bool DEBUGGING = false; 
 const int BLOCKSIZE = 16;
  unsigned char s[256] = 
  {
@@ -166,8 +166,10 @@ unsigned char * rijndael(unsigned char * inital_key) {
 	// key schedule
 	while(sizeOfExpanded != b) {
 		unsigned char * t = new unsigned char[4];
+		unsigned char * ne = new unsigned char[4];
 		for(int i=0;i<4;++i) {
 			t[i] = expanded_key[sizeOfExpanded-4+i]; // Assign last 4 bytes to t.
+			ne[i] = t[i];
 		}
 		cout << endl;
 		key_schedule_core(t, rconi);
@@ -186,8 +188,9 @@ unsigned char * rijndael(unsigned char * inital_key) {
 		// We do this 4 times to create n=16 bytes of key.
 		for(int i=0;i<4;++i) {
 			for(int j=0;j<4;++j) {
-				expanded_key[sizeOfExpanded+j] = ( t[j] ^ expanded_key[sizeOfExpanded-4+j] );
+				expanded_key[sizeOfExpanded+j] = ( t[j] ^ ne[j] );
 				t[j] = expanded_key[sizeOfExpanded+j];
+				
 			}
 			sizeOfExpanded += 4;
 		}
@@ -322,33 +325,30 @@ int main() {
   unsigned char * aes_key = new unsigned char[BLOCKSIZE];
   unsigned char * block = new unsigned char[BLOCKSIZE];
 
-
-
-
 	cin.get(aes_key_input, 17);
 	cin.get(block_input, 17);
-	cout << "input: ";
+	cerr << "input: ";
 	for(int i=0;i<BLOCKSIZE;++i) {
 		aes_key[i] = static_cast<unsigned char>(aes_key_input[i]);
 		printf("%02hhX", aes_key[i]);
-		cout << " ";
+		cerr << " ";
 	}
-	cout << endl << "       ";
+	cerr << endl << "       ";
 	for(int i=0;i<BLOCKSIZE;++i) {
 		block[i] = static_cast<unsigned char>(block_input[i]);
 		printf("%02hhX", block[i]);
-		cout << " ";
+		cerr << " ";
 	}
-	cout << endl;
+	cerr << endl;
 
 	unsigned char * encryptedBlock = encrypt(aes_key, block);
 
-	cout << "encrypted: ";
+	cerr << "encrypted: ";
 	for(int i=0;i<BLOCKSIZE;++i) {
 		printf("%02hhX", encryptedBlock[i]);
-		cout << " ";
+		cerr << " ";
 	}
-	cout << endl;
+	cerr << endl;
 
 
 }
