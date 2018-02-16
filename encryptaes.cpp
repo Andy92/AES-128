@@ -5,7 +5,7 @@
 #include  <vector>
 using namespace std;
 
-const bool DEBUGGING = false; 
+const bool DEBUGGING = true; 
 const int BLOCKSIZE = 16;
  unsigned char s[256] = 
  {
@@ -27,6 +27,8 @@ const int BLOCKSIZE = 16;
     0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
  };
 
+unsigned char lookup_rcon[16] = {
+	0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a };
 
 unsigned int shift_rows_table[16] = {0,5,10,15,4,9,14,3,8,13,2,7,12,1,6,11};
 
@@ -144,7 +146,7 @@ void key_schedule_core(unsigned char * t, int rconi) {
 		// #########################
 	}
 	//cout << rcon(rconi);
-	t[0] = ( t[0] ^ rcon(rconi) );
+	t[0] = ( t[0] ^ lookup_rcon[rconi] );
 	// printf("%02hhX\n", t[0]);
 
 }
@@ -205,7 +207,7 @@ unsigned char * rijndael(unsigned char * inital_key) {
 }
 
 void addRoundKey(unsigned char * roundKey, unsigned char * block, int round) {
-	for(int i;i<BLOCKSIZE;++i) {
+	for(int i=0;i<BLOCKSIZE;++i) {
 		block[i] = block[i] ^ roundKey[i+round*16];
 	}
 }
@@ -219,27 +221,27 @@ void subBytes(unsigned char * block) {
 void shiftRows(unsigned char * block) {
 	unsigned char * t = new unsigned char[4];
 	for(int i=0;i<4;++i) {
-		t[i] = block[4+i];
+		t[i] = block[getMatrix(1,i)];
 	}
 	rotate(t);
 
 	for(int i=0;i<4;++i) {
-		block[4+i] = t[i];
-		t[i] = block[8+i];
+		block[getMatrix(1,i)] = t[i];
+		t[i] = block[getMatrix(2,i)];
 	}
 	rotate(t);
 	rotate(t);
 
 	for(int i=0;i<4;++i) {
-		block[8+i] = t[i];
-		t[i] = block[12+i];
+		block[getMatrix(2,i)] = t[i];
+		t[i] = block[getMatrix(3,i)];
 	}
 	rotate(t);
 	rotate(t);
 	rotate(t);
 
 	for(int i=0;i<4;++i) {
-		block[12+i] = t[i];
+		block[getMatrix(3,i)] = t[i];
 	}
 }
 void mixColumn(unsigned char * blockColumn, int i) {
@@ -298,7 +300,7 @@ unsigned char * encrypt(unsigned char * key, unsigned char * block) {
 	// Initial round
 	addRoundKey(roundKey, encryptedBlock, 0);
 
-	// Round 1 to 10
+	// Round 1 to 9
 	for(int round=1;round<10;++round) {
 		subBytes(encryptedBlock);
 		shiftRows(encryptedBlock);
@@ -314,6 +316,43 @@ unsigned char * encrypt(unsigned char * key, unsigned char * block) {
 	return encryptedBlock;
 }
 
+int main() {
+	char * aes_key_input = new char[BLOCKSIZE];
+  char * block_input = new char[BLOCKSIZE];
+  unsigned char * aes_key = new unsigned char[BLOCKSIZE];
+  unsigned char * block = new unsigned char[BLOCKSIZE];
+
+
+
+
+	cin.get(aes_key_input, 17);
+	cin.get(block_input, 17);
+	cout << "input: ";
+	for(int i=0;i<BLOCKSIZE;++i) {
+		aes_key[i] = static_cast<unsigned char>(aes_key_input[i]);
+		printf("%02hhX", aes_key[i]);
+		cout << " ";
+	}
+	cout << endl << "       ";
+	for(int i=0;i<BLOCKSIZE;++i) {
+		block[i] = static_cast<unsigned char>(block_input[i]);
+		printf("%02hhX", block[i]);
+		cout << " ";
+	}
+	cout << endl;
+
+	unsigned char * encryptedBlock = encrypt(aes_key, block);
+
+	cout << "encrypted: ";
+	for(int i=0;i<BLOCKSIZE;++i) {
+		printf("%02hhX", encryptedBlock[i]);
+		cout << " ";
+	}
+	cout << endl;
+
+
+}
+/*
 int main () {
   streampos size;
   char * memblock;
@@ -363,7 +402,7 @@ int main () {
   delete[] aes_key;
   return 0;
 }
-
+*/
 /*
 int main()
 {
