@@ -169,7 +169,6 @@ unsigned char * rijndael(unsigned char * inital_key) {
 			t[i] = expanded_key[sizeOfExpanded-4+i]; // Assign last 4 bytes to t.
 			
 		}
-		cout << endl;
 		key_schedule_core(t, rconi);
 		rconi++;
 		if(DEBUGGING) {
@@ -320,94 +319,45 @@ unsigned char * encrypt(unsigned char * key, unsigned char * block) {
 
 int main() {
 	char * aes_key_input = new char[BLOCKSIZE];
-  char * block_input = new char[BLOCKSIZE];
+  vector<char *> block_input;
   unsigned char * aes_key = new unsigned char[BLOCKSIZE];
   unsigned char * block = new unsigned char[BLOCKSIZE];
 
-	cin.get(aes_key_input, 17);
-	cin.get(block_input, 17);
-	cerr << "input: ";
+
+	cin.get(aes_key_input, 17); // first 16 bytes are the key
+	int var = 0;
+	while(cin) {
+		block_input.push_back(new char[BLOCKSIZE]);
+		cin.get(block_input[var], 17);
+		// Extra feature that checks if last block is really valid.
+		if(block_input[var][0] == 0) {
+			block_input.pop_back();
+		}
+		var++;
+	}
+	//cerr << "input: ";
 	for(int i=0;i<BLOCKSIZE;++i) {
 		aes_key[i] = static_cast<unsigned char>(aes_key_input[i]);
-		printf("%02hhX", aes_key[i]);
-		cerr << " ";
+		//printf("%02hhX", aes_key[i]);
+		//cerr << " ";
 	}
-	cerr << endl << "       ";
-	for(int i=0;i<BLOCKSIZE;++i) {
-		block[i] = static_cast<unsigned char>(block_input[i]);
-		printf("%02hhX", block[i]);
-		cerr << " ";
-	}
-	cerr << endl;
-
-	unsigned char * encryptedBlock = encrypt(aes_key, block);
-
-	cerr << "encrypted: ";
-	for(int i=0;i<BLOCKSIZE;++i) {
-		printf("%02hhX", encryptedBlock[i]);
-		cerr << " ";
-	}
-	cerr << endl;
-
-
-}
-/*
-int main () {
-  streampos size;
-  char * memblock;
-  bool reading_key = true;
-  unsigned char * aes_key = new unsigned char[BLOCKSIZE];
-  unsigned char * block = new unsigned char[BLOCKSIZE];
-  ifstream file ("aes_sample.in", ios::in|ios::binary|ios::ate);
-  if (file.is_open())
-  {
-    size = file.tellg();
-    memblock = new char [size];
-    file.seekg (0, ios::beg);
-    file.read (memblock, size);
-    file.close();
-
-    cout << "size: " << size << " bytes" << endl;
-    cout << "output: ";
-    for(int i=0;i<size;++i) {
-		printf("%02hhX", memblock[i]);
-		if(reading_key) {
-			aes_key[i] = memblock[i]; // Read key.
-		} else {
-			block[i % 16] = memblock[i]; // Read last block.
+	//cerr << endl << "       ";
+	for(int iter=0;iter<block_input.size();++iter) {
+		for(int i=0;i<BLOCKSIZE;++i) {
+			block[i] = static_cast<unsigned char>(block_input.at(iter)[i]);
+			//printf("%02hhX", block[i]);
+			//cerr << " ";
 		}
+		//cerr << endl;
 
-		if((i % 16) == 15 ) {	// New line every 16 bytes
-			cout << endl << "       ";
-			reading_key = false;
+		unsigned char * encryptedBlock = encrypt(aes_key, block);
+
+		//cerr << "encrypted: ";
+		for(int i=0;i<BLOCKSIZE;++i) {
+			//printf("%02X", encryptedBlock[i]);
+			cout << encryptedBlock[i];
+			//cerr << " ";
 		}
-
-		cout << " ";
+		//cerr << endl;
 	}
-	cout << endl;
-
-	unsigned char * encryptedBlock = encrypt(aes_key, block);
-
-	cout << "encrypted: ";
-	for(int i=0;i<BLOCKSIZE;++i) {
-		printf("%02hhX", encryptedBlock[i]);
-		cout << " ";
-	}
-	cout << endl;
-
-    delete[] memblock;
-  }
-  else cout << "Unable to open file";
-  delete[] aes_key;
-  return 0;
 }
-*/
-/*
-int main()
-{
-  unsigned char c = 'n';
-  cout << "HEX " << hex << (int)c << endl;  // output in hexadecimal
-  cout << "ASC" << c << endl; // output in ascii
-  return 0;
-}
-*/
