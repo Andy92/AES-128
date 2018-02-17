@@ -99,13 +99,6 @@ void rotate(unsigned char * word) {
 	word[2] = word[3];
 	word[3] = tmp;
 }
-
-int rcon(int i) {
-	if(i == 1)
-		return 1;
-	return 2 * rcon(i-1);
-}
-
 /*
 On just the first (leftmost) byte of the output word, 
 exclusive OR the byte with 2 to the power of (i-1) in Rijndael's 
@@ -153,7 +146,7 @@ unsigned char * rijndael(unsigned char * inital_key) {
 
 	int n = 16;
 	int b = 176;
-	unsigned char * expanded_key = new unsigned char[b];
+	unsigned char * expanded_key = new unsigned char[b]; // Gets deleted after last round in AES encrypt()
 	int sizeOfExpanded = n;
 	for(int i=0;i<n;++i) {
 		expanded_key[i] = inital_key[i];
@@ -162,9 +155,8 @@ unsigned char * rijndael(unsigned char * inital_key) {
 
 
 	// key schedule
-	while(sizeOfExpanded != b) {
-		unsigned char * t = new unsigned char[4];
-		unsigned char * ne = new unsigned char[4];
+	unsigned char * t = new unsigned char[4]; // Gets deleted here
+	while(sizeOfExpanded < b) {
 		for(int i=0;i<4;++i) {
 			t[i] = expanded_key[sizeOfExpanded-4+i]; // Assign last 4 bytes to t.
 			
@@ -203,6 +195,7 @@ unsigned char * rijndael(unsigned char * inital_key) {
 		}
 		
 	}
+	delete[] t;
 	return expanded_key;
 }
 
@@ -219,7 +212,7 @@ void subBytes(unsigned char * block) {
 	}
 }
 void shiftRows(unsigned char * block) {
-	unsigned char * t = new unsigned char[4];
+	unsigned char * t = new unsigned char[4]; // This gets deleted here
 	for(int i=0;i<4;++i) {
 		t[i] = block[getMatrix(i,1)];
 	}
@@ -243,9 +236,10 @@ void shiftRows(unsigned char * block) {
 	for(int i=0;i<4;++i) {
 		block[getMatrix(i,3)] = t[i];
 	}
+	delete[] t;
 }
 void mixColumn(unsigned char * blockColumn, int i) {
-	unsigned char * a = new unsigned char[4];
+	unsigned char * a = new unsigned char[4]; // This gets deleted here.
 
 	a[0] = blockColumn[getMatrix(i,0)];
 	a[1] = blockColumn[getMatrix(i,1)];
@@ -255,7 +249,7 @@ void mixColumn(unsigned char * blockColumn, int i) {
 	blockColumn[getMatrix(i,1)] = (unsigned char)(a[0] 		   ^ lookup_g2[a[1]] ^ lookup_g3[a[2]] ^ a[3]);
 	blockColumn[getMatrix(i,2)] = (unsigned char)(a[0] 		   ^ a[1] 		   ^ lookup_g2[a[2]] ^ lookup_g3[a[3]]);
 	blockColumn[getMatrix(i,3)] = (unsigned char)(lookup_g3[a[0]] ^ a[1] 		   ^ a[2] 		   ^ lookup_g2[a[3]]);
-
+	delete[] a;
 }
 /*
 * MixColumns
@@ -291,7 +285,7 @@ Each round consists of several processing steps,
 */
 unsigned char * encrypt(unsigned char * key, unsigned char * block) {
 	int numberOfRounds = 10;
-	unsigned char * encryptedBlock = new unsigned char[BLOCKSIZE];
+	unsigned char * encryptedBlock = new unsigned char[BLOCKSIZE]; // This gets deleted in main()
 	for (int i = 0; i < BLOCKSIZE; ++i) {
 		encryptedBlock[i] = block[i];
 	}
@@ -313,6 +307,7 @@ unsigned char * encrypt(unsigned char * key, unsigned char * block) {
 	subBytes(encryptedBlock);
 	shiftRows(encryptedBlock);
 	addRoundKey(roundKey, encryptedBlock, numberOfRounds);
+	delete[] roundKey;
 
 	return encryptedBlock;
 }
@@ -331,6 +326,7 @@ int main() {
 		cin.get(block_input[var], 17);
 		// Extra feature that checks if last block is really valid.
 		if(block_input[var][0] == 0) {
+			delete[] block_input[var];
 			block_input.pop_back();
 		}
 		var++;
@@ -358,6 +354,7 @@ int main() {
 			cout << encryptedBlock[i];
 			//cerr << " ";
 		}
+		delete[] encryptedBlock;
 		//cerr << endl;
 	}
 }
