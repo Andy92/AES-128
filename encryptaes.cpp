@@ -357,4 +357,12 @@ int main() {
 		delete[] encryptedBlock;
 		//cerr << endl;
 	}
+	delete[] aes_key_input;
+	for(int i=0;i<block_input.size();++i){
+		delete[] block_input[i];
+		block_input.pop_back();
+	}
+	delete[] aes_key;
+	delete[] block;
+
 }
