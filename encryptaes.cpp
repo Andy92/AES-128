@@ -5,7 +5,7 @@
 #include  <vector>
 using namespace std;
 
-const bool DEBUGGING = true; 
+const bool DEBUGGING = false; 
 const int BLOCKSIZE = 16;
  unsigned char s[256] = 
  {
@@ -222,27 +222,27 @@ void subBytes(unsigned char * block) {
 void shiftRows(unsigned char * block) {
 	unsigned char * t = new unsigned char[4];
 	for(int i=0;i<4;++i) {
-		t[i] = block[getMatrix(1,i)];
+		t[i] = block[getMatrix(i,1)];
 	}
 	rotate(t);
 
 	for(int i=0;i<4;++i) {
-		block[getMatrix(1,i)] = t[i];
-		t[i] = block[getMatrix(2,i)];
+		block[getMatrix(i,1)] = t[i];
+		t[i] = block[getMatrix(i,2)];
 	}
 	rotate(t);
 	rotate(t);
 
 	for(int i=0;i<4;++i) {
-		block[getMatrix(2,i)] = t[i];
-		t[i] = block[getMatrix(3,i)];
+		block[getMatrix(i,2)] = t[i];
+		t[i] = block[getMatrix(i,3)];
 	}
 	rotate(t);
 	rotate(t);
 	rotate(t);
 
 	for(int i=0;i<4;++i) {
-		block[getMatrix(3,i)] = t[i];
+		block[getMatrix(i,3)] = t[i];
 	}
 }
 void mixColumn(unsigned char * blockColumn, int i) {
