@@ -5,7 +5,7 @@
 #include  <vector>
 using namespace std;
 
-const bool DEBUGGING = false; 
+const bool DEBUGGING = true; 
 const int BLOCKSIZE = 16;
  unsigned char s[256] = 
  {
@@ -98,7 +98,6 @@ void rotate(unsigned char * word) {
 	word[1] = word[2];
 	word[2] = word[3];
 	word[3] = tmp;
-	//return word;
 }
 
 int rcon(int i) {
@@ -137,8 +136,7 @@ void key_schedule_core(unsigned char * t, int rconi) {
 	for(int i=0;i<4;++i) {
 		t[i] = (unsigned char)s[t[i]];
 		if(DEBUGGING) { 
-			printf("%02hhX", t[i]);
-			cout << " ";
+			printf("%02hhX ", t[i]);
 		}
 	}
 	if(DEBUGGING) {
@@ -169,7 +167,7 @@ unsigned char * rijndael(unsigned char * inital_key) {
 		unsigned char * ne = new unsigned char[4];
 		for(int i=0;i<4;++i) {
 			t[i] = expanded_key[sizeOfExpanded-4+i]; // Assign last 4 bytes to t.
-			ne[i] = t[i];
+			
 		}
 		cout << endl;
 		key_schedule_core(t, rconi);
@@ -188,7 +186,7 @@ unsigned char * rijndael(unsigned char * inital_key) {
 		// We do this 4 times to create n=16 bytes of key.
 		for(int i=0;i<4;++i) {
 			for(int j=0;j<4;++j) {
-				expanded_key[sizeOfExpanded+j] = ( t[j] ^ ne[j] );
+				expanded_key[sizeOfExpanded+j] = ( t[j] ^ expanded_key[sizeOfExpanded-16+j] );
 				t[j] = expanded_key[sizeOfExpanded+j];
 				
 			}
@@ -293,6 +291,7 @@ Each round consists of several processing steps,
     back into the original plaintext using the same encryption key.
 */
 unsigned char * encrypt(unsigned char * key, unsigned char * block) {
+	int numberOfRounds = 10;
 	unsigned char * encryptedBlock = new unsigned char[BLOCKSIZE];
 	for (int i = 0; i < BLOCKSIZE; ++i) {
 		encryptedBlock[i] = block[i];
@@ -304,7 +303,7 @@ unsigned char * encrypt(unsigned char * key, unsigned char * block) {
 	addRoundKey(roundKey, encryptedBlock, 0);
 
 	// Round 1 to 9
-	for(int round=1;round<10;++round) {
+	for(int round=1;round<numberOfRounds;++round) {
 		subBytes(encryptedBlock);
 		shiftRows(encryptedBlock);
 		mixColumns(encryptedBlock);
@@ -314,7 +313,7 @@ unsigned char * encrypt(unsigned char * key, unsigned char * block) {
 	// Final Round
 	subBytes(encryptedBlock);
 	shiftRows(encryptedBlock);
-	addRoundKey(roundKey, encryptedBlock, 10);
+	addRoundKey(roundKey, encryptedBlock, numberOfRounds);
 
 	return encryptedBlock;
 }
