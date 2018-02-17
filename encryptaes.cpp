@@ -313,10 +313,10 @@ unsigned char * encrypt(unsigned char * key, unsigned char * block) {
 }
 
 int main() {
-	char * aes_key_input = new char[BLOCKSIZE];
-  vector<char *> block_input;
-  unsigned char * aes_key = new unsigned char[BLOCKSIZE];
-  unsigned char * block = new unsigned char[BLOCKSIZE];
+	char * aes_key_input = new char[BLOCKSIZE]; // Deleted at the end
+  vector<char *> block_input; // Deleted at the end
+  unsigned char * aes_key = new unsigned char[BLOCKSIZE]; // Deleted at the end
+  unsigned char * block = new unsigned char[BLOCKSIZE];		// deleted at the end
 
 
 	cin.get(aes_key_input, 17); // first 16 bytes are the key
@@ -358,7 +358,7 @@ int main() {
 		//cerr << endl;
 	}
 	delete[] aes_key_input;
-	for(int i=0;i<block_input.size();++i){
+	for(int i=block_input.size()-1;i>=0;--i){
 		delete[] block_input[i];
 		block_input.pop_back();
 	}
