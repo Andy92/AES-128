@@ -30,8 +30,6 @@ const int BLOCKSIZE = 16;
 unsigned char lookup_rcon[16] = {
 	0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a };
 
-unsigned int shift_rows_table[16] = {0,5,10,15,4,9,14,3,8,13,2,7,12,1,6,11};
-
  unsigned char lookup_g2[256] = 
 {
 0x00,0x02,0x04,0x06,0x08,0x0a,0x0c,0x0e,0x10,0x12,0x14,0x16,0x18,0x1a,0x1c,0x1e,
@@ -85,19 +83,16 @@ int getMatrix(int x, int y) {
 	return res;
 }
 /*
-void addRoundKey() {
-
- }
-*/
-/*
 * Rotates the 4 byte word 1 byte to the left.
 */
 void rotate(unsigned char * word) {
-	unsigned char tmp = word[0];
+	unsigned char * tmp = new unsigned char;
+	tmp[0] = word[0];
 	word[0] = word[1];
 	word[1] = word[2];
 	word[2] = word[3];
-	word[3] = tmp;
+	word[3] = tmp[0];
+	delete[] tmp;
 }
 /*
 On just the first (leftmost) byte of the output word, 
@@ -148,6 +143,7 @@ unsigned char * rijndael(unsigned char * inital_key) {
 	int b = 176;
 	unsigned char * expanded_key = new unsigned char[b]; // Gets deleted after last round in AES encrypt()
 	int sizeOfExpanded = n;
+	// Copy over the key to expanded_key since the first 16 bytes are key.
 	for(int i=0;i<n;++i) {
 		expanded_key[i] = inital_key[i];
 	}
@@ -163,8 +159,8 @@ unsigned char * rijndael(unsigned char * inital_key) {
 		}
 		key_schedule_core(t, rconi);
 		rconi++;
+		// #########################
 		if(DEBUGGING) {
-			// #########################
 			for(int i=0;i<4;++i) {
 				printf("%02hhX", t[i]);
 				cout << " ";
@@ -177,15 +173,16 @@ unsigned char * rijndael(unsigned char * inital_key) {
 		// We do this 4 times to create n=16 bytes of key.
 		for(int i=0;i<4;++i) {
 			for(int j=0;j<4;++j) {
-				expanded_key[sizeOfExpanded+j] = ( t[j] ^ expanded_key[sizeOfExpanded-16+j] );
+				expanded_key[sizeOfExpanded+j] = ( t[j] ^ expanded_key[sizeOfExpanded-n+j] );
 				t[j] = expanded_key[sizeOfExpanded+j];
 				
 			}
 			sizeOfExpanded += 4;
 		}
+		// #########################
 		if(DEBUGGING) {
 			cout << "After the key expansion." << endl;
-			// #########################
+			
 			for(int i=0;i<sizeOfExpanded;++i) {
 				printf("%02hhX", expanded_key[i]);
 				cout << " ";
@@ -240,11 +237,9 @@ void shiftRows(unsigned char * block) {
 }
 void mixColumn(unsigned char * blockColumn, int i) {
 	unsigned char * a = new unsigned char[4]; // This gets deleted here.
-
-	a[0] = blockColumn[getMatrix(i,0)];
-	a[1] = blockColumn[getMatrix(i,1)];
-	a[2] = blockColumn[getMatrix(i,2)];
-	a[3] = blockColumn[getMatrix(i,3)];
+	for (int j=0;j<4;++j) {
+		a[j] = blockColumn[getMatrix(i,j)];
+	}
 	blockColumn[getMatrix(i,0)] = (unsigned char)(lookup_g2[a[0]] ^ lookup_g3[a[1]] ^ a[2] 		   ^ a[3]);
 	blockColumn[getMatrix(i,1)] = (unsigned char)(a[0] 		   ^ lookup_g2[a[1]] ^ lookup_g3[a[2]] ^ a[3]);
 	blockColumn[getMatrix(i,2)] = (unsigned char)(a[0] 		   ^ a[1] 		   ^ lookup_g2[a[2]] ^ lookup_g3[a[3]]);
@@ -302,67 +297,27 @@ unsigned char * encrypt(unsigned char * key, unsigned char * block) {
 		mixColumns(encryptedBlock);
 		addRoundKey(roundKey, encryptedBlock, round);
 	}
-	
+
 	// Final Round
 	subBytes(encryptedBlock);
 	shiftRows(encryptedBlock);
 	addRoundKey(roundKey, encryptedBlock, numberOfRounds);
 	delete[] roundKey;
-
 	return encryptedBlock;
 }
 
-int main() {
-	char * aes_key_input = new char[BLOCKSIZE]; // Deleted at the end
-  vector<char *> block_input; // Deleted at the end
-  unsigned char * aes_key = new unsigned char[BLOCKSIZE]; // Deleted at the end
-  unsigned char * block = new unsigned char[BLOCKSIZE];		// deleted at the end
-
-
-	cin.get(aes_key_input, 17); // first 16 bytes are the key
-	int var = 0;
-	while(cin) {
-		block_input.push_back(new char[BLOCKSIZE]);
-		cin.get(block_input[var], 17);
-		// Extra feature that checks if last block is really valid.
-		if(block_input[var][0] == 0) {
-			delete[] block_input[var];
-			block_input.pop_back();
-		}
-		var++;
-	}
-	//cerr << "input: ";
-	for(int i=0;i<BLOCKSIZE;++i) {
-		aes_key[i] = static_cast<unsigned char>(aes_key_input[i]);
-		//printf("%02hhX", aes_key[i]);
-		//cerr << " ";
-	}
-	//cerr << endl << "       ";
-	for(int iter=0;iter<block_input.size();++iter) {
-		for(int i=0;i<BLOCKSIZE;++i) {
-			block[i] = static_cast<unsigned char>(block_input.at(iter)[i]);
-			//printf("%02hhX", block[i]);
-			//cerr << " ";
-		}
-		//cerr << endl;
-
-		unsigned char * encryptedBlock = encrypt(aes_key, block);
-
-		//cerr << "encrypted: ";
-		for(int i=0;i<BLOCKSIZE;++i) {
-			//printf("%02X", encryptedBlock[i]);
-			cout << encryptedBlock[i];
-			//cerr << " ";
-		}
-		delete[] encryptedBlock;
-		//cerr << endl;
-	}
-	delete[] aes_key_input;
-	for(int i=block_input.size()-1;i>=0;--i){
-		delete[] block_input[i];
-		block_input.pop_back();
-	}
-	delete[] aes_key;
+int main(int argc, char **argv) {
+    unsigned char * aes_key = new unsigned char[BLOCKSIZE];
+    unsigned char * block = new unsigned char[BLOCKSIZE];
+    fread(aes_key, 1, BLOCKSIZE, stdin);
+    while (!feof(stdin)) {
+        fread(block, 1, BLOCKSIZE, stdin);
+        if (!feof(stdin)) {
+            unsigned char * encryptedBlock = encrypt(aes_key, block);
+            fwrite(encryptedBlock, 1, BLOCKSIZE, stdout);
+            delete[] encryptedBlock;
+        }
+    }
+    delete[] aes_key;
 	delete[] block;
-
 }

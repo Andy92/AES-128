@@ -7,15 +7,15 @@ using namespace std;
 
 int main () {
   streampos size;
-  char * memblock;
+  unsigned int * memblock;
   bool reading_key = true;
   char * aes_key = new char[16];
   char * block = new char[16];
-  ifstream file ("aes_sample.ans", ios::in|ios::binary|ios::ate);
+  ifstream file ("aes_sample.in", ios::in|ios::binary|ios::ate);
   if (file.is_open())
   {
     size = file.tellg();
-    memblock = new char [size];
+    memblock = new unsigned int [size];
     file.seekg (0, ios::beg);
     file.read (memblock, size);
     file.close();
@@ -23,7 +23,7 @@ int main () {
     cout << "size: " << size << " bytes" << endl;
     cout << "output: ";
     for(int i=0;i<size;++i) {
-		printf("%02hhX", memblock[i]);
+		printf("%X", memblock[i]);
 		if(reading_key) {
 			aes_key[i] = memblock[i]; // Read key.
 		} else {
