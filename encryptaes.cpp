@@ -1,35 +1,38 @@
-// reading an entire binary file
 #include <iostream>
 #include <fstream>
 #include  <iomanip>
 #include  <vector>
 using namespace std;
 
-const bool DEBUGGING = false; 
 const int BLOCKSIZE = 16;
+
+// Lookup tables:
+// s-box lookup table
  unsigned char s[256] = 
  {
-    0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
-    0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
-    0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC, 0x34, 0xA5, 0xE5, 0xF1, 0x71, 0xD8, 0x31, 0x15,
-    0x04, 0xC7, 0x23, 0xC3, 0x18, 0x96, 0x05, 0x9A, 0x07, 0x12, 0x80, 0xE2, 0xEB, 0x27, 0xB2, 0x75,
-    0x09, 0x83, 0x2C, 0x1A, 0x1B, 0x6E, 0x5A, 0xA0, 0x52, 0x3B, 0xD6, 0xB3, 0x29, 0xE3, 0x2F, 0x84,
-    0x53, 0xD1, 0x00, 0xED, 0x20, 0xFC, 0xB1, 0x5B, 0x6A, 0xCB, 0xBE, 0x39, 0x4A, 0x4C, 0x58, 0xCF,
-    0xD0, 0xEF, 0xAA, 0xFB, 0x43, 0x4D, 0x33, 0x85, 0x45, 0xF9, 0x02, 0x7F, 0x50, 0x3C, 0x9F, 0xA8,
-    0x51, 0xA3, 0x40, 0x8F, 0x92, 0x9D, 0x38, 0xF5, 0xBC, 0xB6, 0xDA, 0x21, 0x10, 0xFF, 0xF3, 0xD2,
-    0xCD, 0x0C, 0x13, 0xEC, 0x5F, 0x97, 0x44, 0x17, 0xC4, 0xA7, 0x7E, 0x3D, 0x64, 0x5D, 0x19, 0x73,
-    0x60, 0x81, 0x4F, 0xDC, 0x22, 0x2A, 0x90, 0x88, 0x46, 0xEE, 0xB8, 0x14, 0xDE, 0x5E, 0x0B, 0xDB,
-    0xE0, 0x32, 0x3A, 0x0A, 0x49, 0x06, 0x24, 0x5C, 0xC2, 0xD3, 0xAC, 0x62, 0x91, 0x95, 0xE4, 0x79,
-    0xE7, 0xC8, 0x37, 0x6D, 0x8D, 0xD5, 0x4E, 0xA9, 0x6C, 0x56, 0xF4, 0xEA, 0x65, 0x7A, 0xAE, 0x08,
-    0xBA, 0x78, 0x25, 0x2E, 0x1C, 0xA6, 0xB4, 0xC6, 0xE8, 0xDD, 0x74, 0x1F, 0x4B, 0xBD, 0x8B, 0x8A,
-    0x70, 0x3E, 0xB5, 0x66, 0x48, 0x03, 0xF6, 0x0E, 0x61, 0x35, 0x57, 0xB9, 0x86, 0xC1, 0x1D, 0x9E,
-    0xE1, 0xF8, 0x98, 0x11, 0x69, 0xD9, 0x8E, 0x94, 0x9B, 0x1E, 0x87, 0xE9, 0xCE, 0x55, 0x28, 0xDF,
-    0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
+ 0x63,0x7C,0x77,0x7B,0xF2,0x6B,0x6F,0xC5,0x30,0x01,0x67,0x2B,0xFE,0xD7,0xAB,0x76,
+ 0xCA,0x82,0xC9,0x7D,0xFA,0x59,0x47,0xF0,0xAD,0xD4,0xA2,0xAF,0x9C,0xA4,0x72,0xC0,
+ 0xB7,0xFD,0x93,0x26,0x36,0x3F,0xF7,0xCC,0x34,0xA5,0xE5,0xF1,0x71,0xD8,0x31,0x15,
+ 0x04,0xC7,0x23,0xC3,0x18,0x96,0x05,0x9A,0x07,0x12,0x80,0xE2,0xEB,0x27,0xB2,0x75,
+ 0x09,0x83,0x2C,0x1A,0x1B,0x6E,0x5A,0xA0,0x52,0x3B,0xD6,0xB3,0x29,0xE3,0x2F,0x84,
+ 0x53,0xD1,0x00,0xED,0x20,0xFC,0xB1,0x5B,0x6A,0xCB,0xBE,0x39,0x4A,0x4C,0x58,0xCF,
+ 0xD0,0xEF,0xAA,0xFB,0x43,0x4D,0x33,0x85,0x45,0xF9,0x02,0x7F,0x50,0x3C,0x9F,0xA8,
+ 0x51,0xA3,0x40,0x8F,0x92,0x9D,0x38,0xF5,0xBC,0xB6,0xDA,0x21,0x10,0xFF,0xF3,0xD2,
+ 0xCD,0x0C,0x13,0xEC,0x5F,0x97,0x44,0x17,0xC4,0xA7,0x7E,0x3D,0x64,0x5D,0x19,0x73,
+ 0x60,0x81,0x4F,0xDC,0x22,0x2A,0x90,0x88,0x46,0xEE,0xB8,0x14,0xDE,0x5E,0x0B,0xDB,
+ 0xE0,0x32,0x3A,0x0A,0x49,0x06,0x24,0x5C,0xC2,0xD3,0xAC,0x62,0x91,0x95,0xE4,0x79,
+ 0xE7,0xC8,0x37,0x6D,0x8D,0xD5,0x4E,0xA9,0x6C,0x56,0xF4,0xEA,0x65,0x7A,0xAE,0x08,
+ 0xBA,0x78,0x25,0x2E,0x1C,0xA6,0xB4,0xC6,0xE8,0xDD,0x74,0x1F,0x4B,0xBD,0x8B,0x8A,
+ 0x70,0x3E,0xB5,0x66,0x48,0x03,0xF6,0x0E,0x61,0x35,0x57,0xB9,0x86,0xC1,0x1D,0x9E,
+ 0xE1,0xF8,0x98,0x11,0x69,0xD9,0x8E,0x94,0x9B,0x1E,0x87,0xE9,0xCE,0x55,0x28,0xDF,
+ 0x8C,0xA1,0x89,0x0D,0xBF,0xE6,0x42,0x68,0x41,0x99,0x2D,0x0F,0xB0,0x54,0xBB,0x16
  };
-
+// rcon lookup table
 unsigned char lookup_rcon[16] = {
-	0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a };
+	0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a
+};
 
+// G2 lookup
  unsigned char lookup_g2[256] = 
 {
 0x00,0x02,0x04,0x06,0x08,0x0a,0x0c,0x0e,0x10,0x12,0x14,0x16,0x18,0x1a,0x1c,0x1e,
@@ -51,7 +54,7 @@ unsigned char lookup_rcon[16] = {
 };
 
 
-
+// G3 lookup table
 unsigned char lookup_g3[256] = 
 {
 0x00,0x03,0x06,0x05,0x0c,0x0f,0x0a,0x09,0x18,0x1b,0x1e,0x1d,0x14,0x17,0x12,0x11,
@@ -72,11 +75,12 @@ unsigned char lookup_g3[256] =
 0x0b,0x08,0x0d,0x0e,0x07,0x04,0x01,0x02,0x13,0x10,0x15,0x16,0x1f,0x1c,0x19,0x1a
 };
 /*
-// A 4x4 matrix evaluator
-[0 4 8  12
- 1 5 9  13
- 2 6 10 14
- 3 7 11 15]
+* A 4x4 matrix evaluator
+* [0 4 8  12
+*  1 5 9  13
+*  2 6 10 14
+*  3 7 11 15]
+* @Returns a number to represent a 4x4 matrix.
 */
 int getMatrix(int x, int y) {
 	int res = x * 4 + y;
@@ -95,53 +99,28 @@ void rotate(unsigned char * word) {
 	delete[] tmp;
 }
 /*
-On just the first (leftmost) byte of the output word, 
-exclusive OR the byte with 2 to the power of (i-1) in Rijndael's 
-finite field. In other words, perform the rcon operation with i as the input,
- and exclusive or the rcon output with the first byte of the output word
+* Rotate the input of 4 bytes.
+* Perform the s-box on all bytes.
+* Perform the rcon operation (in this case lookup table) on the leftmost byte t[0].
 */
 void key_schedule_core(unsigned char * t, int rconi) {
-	if(DEBUGGING) {
-		// #########################
-		for(int i=0;i<4;++i) {
-			printf("%02hhX", t[i]);
-			cout << " ";
-		}
-		cout << endl << "rotate" << endl;
-		// #########################
-	}
 	rotate(t);
-	if(DEBUGGING) {
-		// #########################
-		for(int i=0;i<4;++i) {
-			printf("%02hhX", t[i]);
-			cout << " ";
-		}
-		cout << endl << "rotate" << endl;
-		// #########################
-	}
-	// #########################
 	for(int i=0;i<4;++i) {
 		t[i] = (unsigned char)s[t[i]];
-		if(DEBUGGING) { 
-			printf("%02hhX ", t[i]);
-		}
 	}
-	if(DEBUGGING) {
-	cout << endl << "sbox" << endl;
-		// #########################
-	}
-	//cout << rcon(rconi);
 	t[0] = ( t[0] ^ lookup_rcon[rconi] );
-	// printf("%02hhX\n", t[0]);
-
 }
 
+/*
+ * This is the rijndael key expansion. Returns a 176 bytes of round key from the
+ * initial 16 byte key.
+ */
 unsigned char * rijndael(unsigned char * inital_key) {
 
 	int n = 16;
 	int b = 176;
-	unsigned char * expanded_key = new unsigned char[b]; // Gets deleted after last round in AES encrypt()
+	// Gets deleted after last round in AES encrypt()
+	unsigned char * expanded_key = new unsigned char[b];
 	int sizeOfExpanded = n;
 	// Copy over the key to expanded_key since the first 16 bytes are key.
 	for(int i=0;i<n;++i) {
@@ -149,48 +128,29 @@ unsigned char * rijndael(unsigned char * inital_key) {
 	}
 	int rconi = 1;
 
-
 	// key schedule
 	unsigned char * t = new unsigned char[4]; // Gets deleted here
 	while(sizeOfExpanded < b) {
 		for(int i=0;i<4;++i) {
-			t[i] = expanded_key[sizeOfExpanded-4+i]; // Assign last 4 bytes to t.
+			 // Assign last 4 bytes to t.
+			t[i] = expanded_key[sizeOfExpanded-4+i];
 			
 		}
 		key_schedule_core(t, rconi);
 		rconi++;
-		// #########################
-		if(DEBUGGING) {
-			for(int i=0;i<4;++i) {
-				printf("%02hhX", t[i]);
-				cout << " ";
-			}
-			cout << endl;
-		}
-	// #########################
-// We exclusive-OR t with the four-byte block n 
-// bytes before the new expanded key. This becomes the next 4 bytes in the expanded key
-		// We do this 4 times to create n=16 bytes of key.
+		/* We exclusive-OR t with the four-byte block n 
+		 * bytes before the new expanded key. 
+		 * This becomes the next 4 bytes in the expanded key
+		 * We do this 4 times to create n=16 bytes of key.
+		 */
 		for(int i=0;i<4;++i) {
 			for(int j=0;j<4;++j) {
-				expanded_key[sizeOfExpanded+j] = ( t[j] ^ expanded_key[sizeOfExpanded-n+j] );
+				expanded_key[sizeOfExpanded+j] = 
+				( t[j] ^ expanded_key[sizeOfExpanded-n+j] );
 				t[j] = expanded_key[sizeOfExpanded+j];
-				
 			}
 			sizeOfExpanded += 4;
 		}
-		// #########################
-		if(DEBUGGING) {
-			cout << "After the key expansion." << endl;
-			
-			for(int i=0;i<sizeOfExpanded;++i) {
-				printf("%02hhX", expanded_key[i]);
-				cout << " ";
-			}
-			cout << endl;
-			// #########################
-		}
-		
 	}
 	delete[] t;
 	return expanded_key;
@@ -208,79 +168,50 @@ void subBytes(unsigned char * block) {
 		block[i] = (unsigned char)s[block[i]];
 	}
 }
+// We rotate each row 1 byte to the left.
 void shiftRows(unsigned char * block) {
 	unsigned char * t = new unsigned char[4]; // This gets deleted here
-	for(int i=0;i<4;++i) {
-		t[i] = block[getMatrix(i,1)];
-	}
-	rotate(t);
-
-	for(int i=0;i<4;++i) {
-		block[getMatrix(i,1)] = t[i];
-		t[i] = block[getMatrix(i,2)];
-	}
-	rotate(t);
-	rotate(t);
-
-	for(int i=0;i<4;++i) {
-		block[getMatrix(i,2)] = t[i];
-		t[i] = block[getMatrix(i,3)];
-	}
-	rotate(t);
-	rotate(t);
-	rotate(t);
-
-	for(int i=0;i<4;++i) {
-		block[getMatrix(i,3)] = t[i];
+	for(int j=1;j<4;++j) {
+		for(int i=0;i<4;++i) {
+			t[i] = block[getMatrix(i,j)];
+		}
+		for(int u=0;u<j;++u) {
+			rotate(t);
+		}
+		for(int i=0;i<4;++i) {
+			block[getMatrix(i,j)] = t[i];
+		}
 	}
 	delete[] t;
-}
-void mixColumn(unsigned char * blockColumn, int i) {
-	unsigned char * a = new unsigned char[4]; // This gets deleted here.
-	for (int j=0;j<4;++j) {
-		a[j] = blockColumn[getMatrix(i,j)];
-	}
-	blockColumn[getMatrix(i,0)] = (unsigned char)(lookup_g2[a[0]] ^ lookup_g3[a[1]] ^ a[2] 		   ^ a[3]);
-	blockColumn[getMatrix(i,1)] = (unsigned char)(a[0] 		   ^ lookup_g2[a[1]] ^ lookup_g3[a[2]] ^ a[3]);
-	blockColumn[getMatrix(i,2)] = (unsigned char)(a[0] 		   ^ a[1] 		   ^ lookup_g2[a[2]] ^ lookup_g3[a[3]]);
-	blockColumn[getMatrix(i,3)] = (unsigned char)(lookup_g3[a[0]] ^ a[1] 		   ^ a[2] 		   ^ lookup_g2[a[3]]);
-	delete[] a;
 }
 /*
 * MixColumns
 */
 void mixColumns(unsigned char * block) {
-	if(DEBUGGING) {
-		for(int i=0;i<4;++i) {
-			printf("%02hhX", block[getMatrix(0,i)]);
-			cout << " ";
-		}
-		cout << endl;
-	}
+	unsigned char * a = new unsigned char[4]; // This gets deleted here.
 	for (int i=0;i<4;++i) {
-		mixColumn(block, i);
-	}
-	if(DEBUGGING) {
-		for(int i=0;i<4;++i) {
-			printf("%02hhX", block[getMatrix(0,i)]);
-			cout << " ";
+		for (int j=0;j<4;++j) {
+			a[j] = block[getMatrix(i,j)];
 		}
-		cout << endl;
+		block[getMatrix(i,0)] = (unsigned char)(lookup_g2[a[0]] ^ lookup_g3[a[1]] ^ a[2]			  ^ a[3]);
+		block[getMatrix(i,1)] = (unsigned char)(a[0]			^ lookup_g2[a[1]] ^ lookup_g3[a[2]]   ^ a[3]);
+		block[getMatrix(i,2)] = (unsigned char)(a[0]			^ a[1] 		      ^ lookup_g2[a[2]]   ^ lookup_g3[a[3]]);
+		block[getMatrix(i,3)] = (unsigned char)(lookup_g3[a[0]] ^ a[1] 		      ^ a[2]			  ^ lookup_g2[a[3]]);
 	}
-
+	delete[] a;
 }
 /*
-10 cycles of repetition for 128-bit keys.
-
-Each round consists of several processing steps,
- each containing four similar but different stages,
-  including one that depends on the encryption key itself.
-   A set of reverse rounds are applied to transform ciphertext
-    back into the original plaintext using the same encryption key.
+ * Encrypts one block of 16 bytes with a 16 bytes = 128-bit key.
+ * Each round consists of several processing steps,
+ * each containing four similar but different stages,
+ * including one that depends on the encryption key itself.
+ * A set of reverse rounds are applied to transform ciphertext
+ * back into the original plaintext using the same encryption key.
 */
 unsigned char * encrypt(unsigned char * key, unsigned char * block) {
 	int numberOfRounds = 10;
-	unsigned char * encryptedBlock = new unsigned char[BLOCKSIZE]; // This gets deleted in main()
+	 // This gets deleted in main()
+	unsigned char * encryptedBlock = new unsigned char[BLOCKSIZE];
 	for (int i = 0; i < BLOCKSIZE; ++i) {
 		encryptedBlock[i] = block[i];
 	}
@@ -309,8 +240,10 @@ unsigned char * encrypt(unsigned char * key, unsigned char * block) {
 int main(int argc, char **argv) {
     unsigned char * aes_key = new unsigned char[BLOCKSIZE];
     unsigned char * block = new unsigned char[BLOCKSIZE];
+    // Read a block sized keys.
     fread(aes_key, 1, BLOCKSIZE, stdin);
     while (!feof(stdin)) {
+// Reads a block at a time and encrypts it and writes the answers to standard output.
         fread(block, 1, BLOCKSIZE, stdin);
         if (!feof(stdin)) {
             unsigned char * encryptedBlock = encrypt(aes_key, block);
